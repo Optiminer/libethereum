@@ -21,14 +21,15 @@
 #include <functional>
 #include <libethash/ethash.h>
 
+#include "pipelined_hash.h"
+
 class ethash_cl_miner
 {
 private:
 	enum { c_maxSearchResults = 63, c_bufferCount = 2, c_hashBatchSize = 1024 };
 
 public:
-	struct search_hook
-	{
+	struct search_hook: public PipelinedHash::Listener {
 		virtual ~search_hook(); // always a virtual destructor for a class with virtuals.
 
 		// reports progress, return true to abort
@@ -99,6 +100,8 @@ private:
 	unsigned int m_stepWorkSizeAdjust;
 	/// The Work Size way of adjustment, > 0 when previously increased, < 0 when previously decreased
 	int m_wayWorkSizeAdjust = 0;
+
+	PipelinedHash m_pipelinedHash;
 
 	/// The local work size for the search
 	static unsigned s_workgroupSize;

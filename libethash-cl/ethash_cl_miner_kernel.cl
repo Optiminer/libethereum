@@ -245,7 +245,8 @@ __kernel void compute_hash_simple(
     __global hash32_t* out
 )
 { 
-    
+  __global uint* const g_dat_p = (__global uint* const)g_dag;   
+  
   uint item = get_global_id(0) / 32;
   uint subgroup = get_local_id(0) / 32;
   
@@ -262,8 +263,12 @@ __kernel void compute_hash_simple(
       pi[subgroup] = fnv(init0 ^ a, mix_val) % DAG_SIZE;
     }
     barrier(CLK_LOCAL_MEM_FENCE);
-    uint p = pi[subgroup];
-    mix_val = fnv(mix_val, g_dag[p].uints[t]);
+    
+    //uint v = fnv(mix_val, g_dag[pi[subgroup]].uints[t]);
+    // Same as line above but avoids 64bit adds: We know the byte offset must be < 2^32.
+    uint v = *(__global const uint*)((__global const uchar*)g_dat_p + 4*(32 * pi[subgroup] + t));
+    
+    mix_val = fnv(mix_val, v);
     barrier(CLK_LOCAL_MEM_FENCE);
   }
 
